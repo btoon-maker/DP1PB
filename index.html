@@ -301,45 +301,80 @@
       box-shadow: 0 0 0 6px rgba(249,115,22,0.5);
     }
 
-    /* Hotspot tooltip */
+    /* -------------------------------------------------------
+       HOTSPOT TOOLTIP
+       Tooltips are repositioned to `position: fixed` by JS
+       when opened, so they escape the overflow:hidden clip
+       on .card-image-wrap. Default CSS keeps them hidden.
+       ------------------------------------------------------- */
     .hotspot-tooltip {
-      position: absolute;
-      bottom: calc(100% + 10px);
-      left: 50%;
-      transform: translateX(-50%) scale(0.92);
+      /* Hidden by default — JS sets position: fixed + coords when open */
+      display: none;
+      position: fixed;           /* overridden by JS — escape overflow clip  */
+      z-index: 9999;
+
+      /* Visual design */
       background: var(--navy);
       color: var(--offwhite);
-      font-size: 0.78rem;
-      line-height: 1.5;
-      padding: 9px 13px;
+      border-top: 3px solid var(--orange);
       border-radius: 8px;
-      white-space: nowrap;
-      box-shadow: 0 4px 16px rgba(0,0,0,0.4);
-      border-top: 2px solid var(--orange);
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity 0.2s ease, transform 0.2s ease;
-      z-index: 10;
-      max-width: 200px;
+      box-shadow: 0 6px 28px rgba(0,0,0,0.55), 0 0 0 1px rgba(249,115,22,0.25);
+
+      /* Typography */
+      font-size: 0.82rem;
+      line-height: 1.6;
+      text-align: left;
       white-space: normal;
-      text-align: center;
+
+      /* Sizing — wide enough to read, narrow enough to not cover the car */
+      width: 210px;
+      padding: 10px 13px;
+
+      /* Smooth fade in */
+      animation: tooltip-in 0.18s ease both;
+      pointer-events: none;
     }
 
-    /* tooltip caret */
-    .hotspot-tooltip::after {
+    @keyframes tooltip-in {
+      from { opacity: 0; transform: translateY(4px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .hotspot.open .hotspot-tooltip {
+      display: block;
+    }
+
+    /* Tooltip title (hotspot label shown inside the card) */
+    .hotspot-tooltip .tip-title {
+      font-size: 0.68rem;
+      font-weight: 800;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--orange);
+      margin-bottom: 5px;
+      display: block;
+    }
+
+    /* Down-arrow caret — points to hotspot below */
+    .hotspot-tooltip.caret-down::after {
       content: '';
       position: absolute;
       top: 100%;
       left: 50%;
       transform: translateX(-50%);
-      border: 6px solid transparent;
+      border: 7px solid transparent;
       border-top-color: var(--navy);
     }
 
-    .hotspot.open .hotspot-tooltip,
-    .hotspot:focus .hotspot-tooltip {
-      opacity: 1;
-      transform: translateX(-50%) scale(1);
+    /* Up-arrow caret — points to hotspot above */
+    .hotspot-tooltip.caret-up::before {
+      content: '';
+      position: absolute;
+      bottom: 100%;
+      left: 50%;
+      transform: translateX(-50%);
+      border: 7px solid transparent;
+      border-bottom-color: var(--orange);
     }
 
     /* Hotspot label (tiny caption below) */
@@ -540,8 +575,8 @@
       }
 
       .hotspot-tooltip {
-        font-size: 0.72rem;
-        max-width: 160px;
+        width: 180px;
+        font-size: 0.78rem;
       }
 
       .nav-row {
@@ -660,51 +695,61 @@
         -->
         <div class="hotspot-layer" id="hotspots-1" aria-label="Clickable observation points">
 
-          <!-- Front Bumper ~15% from left, 80% from top -->
+          <!-- ═══════════════════════════════════════════════════
+               TEST 1 HOTSPOT POSITIONS
+               All values are % from the left/top of the image container.
+               Adjust left/top to reposition on your actual image.
+               ═══════════════════════════════════════════════════ -->
+
+          <!-- Test 1 bumper hotspot — front-lower area of vehicle -->
           <button class="hotspot"
-                  style="left:15%; top:78%;"
-                  aria-label="Front bumper observation"
+                  style="left:13%; top:76%;"
+                  aria-label="Bumper observation — Test 1"
                   onclick="toggleHotspot(this)"
                   data-card="1">
             <span class="hotspot-label">Bumper</span>
             <div class="hotspot-tooltip">
-              What do you notice about the front bumper's shape or position?
+              <span class="tip-title">Bumper</span>
+              The bumper shows a small dent at the point of contact. Only a small part of the car changed shape.
             </div>
           </button>
 
-          <!-- Hood ~45% from left, 50% from top -->
+          <!-- Test 1 crumple zone hotspot — lower front structure -->
           <button class="hotspot"
-                  style="left:45%; top:40%;"
-                  aria-label="Hood observation"
-                  onclick="toggleHotspot(this)"
-                  data-card="1">
-            <span class="hotspot-label">Hood</span>
-            <div class="hotspot-tooltip">
-              Look at the hood — does it look the same as before?
-            </div>
-          </button>
-
-          <!-- Barrier / contact point ~10% from left, 55% from top -->
-          <button class="hotspot"
-                  style="left:8%; top:55%;"
-                  aria-label="Barrier contact point observation"
-                  onclick="toggleHotspot(this)"
-                  data-card="1">
-            <span class="hotspot-label">Barrier</span>
-            <div class="hotspot-tooltip">
-              Where did the vehicle make contact? What does that area look like?
-            </div>
-          </button>
-
-          <!-- Crumple zone ~30% from left, 65% from top -->
-          <button class="hotspot"
-                  style="left:30%; top:60%;"
-                  aria-label="Crumple zone observation"
+                  style="left:26%; top:64%;"
+                  aria-label="Crumple zone observation — Test 1"
                   onclick="toggleHotspot(this)"
                   data-card="1">
             <span class="hotspot-label">Crumple Zone</span>
             <div class="hotspot-tooltip">
-              Can you find any part of the vehicle that bent, folded, or crushed?
+              <span class="tip-title">Crumple Zone</span>
+              The crumple zone remains mostly unchanged. Very little bending is visible.
+            </div>
+          </button>
+
+          <!-- Test 1 hood hotspot — upper front of vehicle -->
+          <button class="hotspot"
+                  style="left:46%; top:36%;"
+                  aria-label="Hood observation — Test 1"
+                  onclick="toggleHotspot(this)"
+                  data-card="1">
+            <span class="hotspot-label">Hood</span>
+            <div class="hotspot-tooltip">
+              <span class="tip-title">Hood</span>
+              The hood keeps its original shape. No major changes are observed.
+            </div>
+          </button>
+
+          <!-- Test 1 barrier hotspot — far left, contact wall -->
+          <button class="hotspot"
+                  style="left:8%; top:57%;"
+                  aria-label="Barrier observation — Test 1"
+                  onclick="toggleHotspot(this)"
+                  data-card="1">
+            <span class="hotspot-label">Barrier</span>
+            <div class="hotspot-tooltip">
+              <span class="tip-title">Barrier</span>
+              The barrier does not move. The contact area is small.
             </div>
           </button>
 
@@ -761,47 +806,61 @@
 
         <div class="hotspot-layer" id="hotspots-2" aria-label="Clickable observation points">
 
+          <!-- ═══════════════════════════════════════════════════
+               TEST 2 HOTSPOT POSITIONS
+               All values are % from the left/top of the image container.
+               Adjust left/top to reposition on your actual image.
+               ═══════════════════════════════════════════════════ -->
+
+          <!-- Test 2 bumper hotspot — front-lower area of vehicle -->
           <button class="hotspot"
-                  style="left:15%; top:78%;"
-                  aria-label="Front bumper observation"
+                  style="left:15%; top:76%;"
+                  aria-label="Bumper observation — Test 2"
                   onclick="toggleHotspot(this)"
                   data-card="2">
             <span class="hotspot-label">Bumper</span>
             <div class="hotspot-tooltip">
-              How does the front bumper compare to Test 1?
+              <span class="tip-title">Bumper</span>
+              The bumper is pushed inward more than in Test 1. The area of change has increased.
             </div>
           </button>
 
+          <!-- Test 2 crumple zone hotspot — lower front structure -->
           <button class="hotspot"
-                  style="left:45%; top:40%;"
-                  aria-label="Hood observation"
-                  onclick="toggleHotspot(this)"
-                  data-card="2">
-            <span class="hotspot-label">Hood</span>
-            <div class="hotspot-tooltip">
-              Do you notice more or less change on the hood here?
-            </div>
-          </button>
-
-          <button class="hotspot"
-                  style="left:8%; top:55%;"
-                  aria-label="Barrier contact point observation"
-                  onclick="toggleHotspot(this)"
-                  data-card="2">
-            <span class="hotspot-label">Barrier</span>
-            <div class="hotspot-tooltip">
-              How deep or wide is the contact area compared to Test 1?
-            </div>
-          </button>
-
-          <button class="hotspot"
-                  style="left:30%; top:60%;"
-                  aria-label="Crumple zone observation"
+                  style="left:28%; top:64%;"
+                  aria-label="Crumple zone observation — Test 2"
                   onclick="toggleHotspot(this)"
                   data-card="2">
             <span class="hotspot-label">Crumple Zone</span>
             <div class="hotspot-tooltip">
-              Is the crumple zone bigger, smaller, or different from Test 1?
+              <span class="tip-title">Crumple Zone</span>
+              The crumple zone shows visible bending. More of the structure is affected.
+            </div>
+          </button>
+
+          <!-- Test 2 hood hotspot — upper front of vehicle -->
+          <button class="hotspot"
+                  style="left:46%; top:36%;"
+                  aria-label="Hood observation — Test 2"
+                  onclick="toggleHotspot(this)"
+                  data-card="2">
+            <span class="hotspot-label">Hood</span>
+            <div class="hotspot-tooltip">
+              <span class="tip-title">Hood</span>
+              The hood begins to bend slightly. A new area of change is observed.
+            </div>
+          </button>
+
+          <!-- Test 2 barrier hotspot — far left, contact wall -->
+          <button class="hotspot"
+                  style="left:8%; top:57%;"
+                  aria-label="Barrier observation — Test 2"
+                  onclick="toggleHotspot(this)"
+                  data-card="2">
+            <span class="hotspot-label">Barrier</span>
+            <div class="hotspot-tooltip">
+              <span class="tip-title">Barrier</span>
+              The barrier remains still. The contact area is larger than before.
             </div>
           </button>
 
@@ -857,47 +916,61 @@
 
         <div class="hotspot-layer" id="hotspots-3" aria-label="Clickable observation points">
 
+          <!-- ═══════════════════════════════════════════════════
+               TEST 3 HOTSPOT POSITIONS
+               All values are % from the left/top of the image container.
+               Adjust left/top to reposition on your actual image.
+               ═══════════════════════════════════════════════════ -->
+
+          <!-- Test 3 bumper hotspot — front-lower area of vehicle -->
           <button class="hotspot"
-                  style="left:15%; top:78%;"
-                  aria-label="Front bumper observation"
+                  style="left:17%; top:76%;"
+                  aria-label="Bumper observation — Test 3"
                   onclick="toggleHotspot(this)"
                   data-card="3">
             <span class="hotspot-label">Bumper</span>
             <div class="hotspot-tooltip">
-              What happened to the bumper? Compare it to the before image.
+              <span class="tip-title">Bumper</span>
+              The bumper is heavily compressed. Its original shape is no longer visible.
             </div>
           </button>
 
+          <!-- Test 3 crumple zone hotspot — lower front structure -->
           <button class="hotspot"
-                  style="left:45%; top:40%;"
-                  aria-label="Hood observation"
-                  onclick="toggleHotspot(this)"
-                  data-card="3">
-            <span class="hotspot-label">Hood</span>
-            <div class="hotspot-tooltip">
-              Look at the hood — how far did the damage reach compared to Test 1 and 2?
-            </div>
-          </button>
-
-          <button class="hotspot"
-                  style="left:8%; top:55%;"
-                  aria-label="Barrier contact point observation"
-                  onclick="toggleHotspot(this)"
-                  data-card="3">
-            <span class="hotspot-label">Barrier</span>
-            <div class="hotspot-tooltip">
-              How does this contact area compare to the other two tests?
-            </div>
-          </button>
-
-          <button class="hotspot"
-                  style="left:30%; top:60%;"
-                  aria-label="Crumple zone observation"
+                  style="left:31%; top:64%;"
+                  aria-label="Crumple zone observation — Test 3"
                   onclick="toggleHotspot(this)"
                   data-card="3">
             <span class="hotspot-label">Crumple Zone</span>
             <div class="hotspot-tooltip">
-              Can you see a pattern in how the crumple zone changed across all three tests?
+              <span class="tip-title">Crumple Zone</span>
+              The crumple zone is significantly deformed. A large portion of the structure has changed.
+            </div>
+          </button>
+
+          <!-- Test 3 hood hotspot — upper front of vehicle -->
+          <button class="hotspot"
+                  style="left:47%; top:34%;"
+                  aria-label="Hood observation — Test 3"
+                  onclick="toggleHotspot(this)"
+                  data-card="3">
+            <span class="hotspot-label">Hood</span>
+            <div class="hotspot-tooltip">
+              <span class="tip-title">Hood</span>
+              The hood is bent and lifted upward. The change is much greater than in earlier tests.
+            </div>
+          </button>
+
+          <!-- Test 3 barrier hotspot — far left, contact wall -->
+          <button class="hotspot"
+                  style="left:8%; top:57%;"
+                  aria-label="Barrier observation — Test 3"
+                  onclick="toggleHotspot(this)"
+                  data-card="3">
+            <span class="hotspot-label">Barrier</span>
+            <div class="hotspot-tooltip">
+              <span class="tip-title">Barrier</span>
+              The barrier does not move. The car presses into it over a larger area.
             </div>
           </button>
 
@@ -1019,29 +1092,95 @@
   }
 
   /* ----------------------------------------------------------
-     HOTSPOTS — toggle observation prompt tooltip
+     HOTSPOTS — toggle observation tooltip with smart positioning
   ---------------------------------------------------------- */
+
+  /**
+   * Positions the tooltip using `position: fixed` so it escapes
+   * the overflow:hidden clip on .card-image-wrap.
+   * Prefers appearing ABOVE the hotspot; falls back to BELOW if
+   * not enough room. Clamps horizontally to the viewport.
+   *
+   * @param {HTMLElement} btn - The hotspot button element
+   */
+  function positionTooltip(btn) {
+    const tooltip = btn.querySelector('.hotspot-tooltip');
+    if (!tooltip) return;
+
+    // --- TOOLTIP DIMENSIONS ---
+    // Width matches CSS (210px desktop, 180px mobile).
+    // Height is estimated; browser will use actual height after display:block.
+    const TIP_W    = window.innerWidth <= 680 ? 180 : 210;
+    const MARGIN   = 10;   // gap between hotspot edge and tooltip
+    const VIEWPORT_PAD = 8; // minimum distance from viewport edges
+
+    // Temporarily show (off-screen) to get real height
+    tooltip.style.display = 'block';
+    tooltip.style.visibility = 'hidden';
+    tooltip.style.left  = '-9999px';
+    tooltip.style.top   = '-9999px';
+    tooltip.style.width = TIP_W + 'px';
+
+    const tipH   = tooltip.offsetHeight;
+    const btnR   = btn.getBoundingClientRect();
+    const vpW    = window.innerWidth;
+    const vpH    = window.innerHeight;
+
+    // Horizontal: center on hotspot, then clamp
+    let left = btnR.left + btnR.width / 2 - TIP_W / 2;
+    left = Math.max(VIEWPORT_PAD, Math.min(left, vpW - TIP_W - VIEWPORT_PAD));
+
+    // Vertical: above by default, below if not enough room
+    const spaceAbove = btnR.top - MARGIN;
+    let top, caretDir;
+
+    if (spaceAbove >= tipH + MARGIN) {
+      // Show ABOVE
+      top      = btnR.top - tipH - MARGIN;
+      caretDir = 'caret-down';
+    } else {
+      // Show BELOW
+      top      = btnR.bottom + MARGIN;
+      caretDir = 'caret-up';
+    }
+
+    // Clamp vertically
+    top = Math.max(VIEWPORT_PAD, Math.min(top, vpH - tipH - VIEWPORT_PAD));
+
+    // Apply final position
+    tooltip.style.left       = left + 'px';
+    tooltip.style.top        = top  + 'px';
+    tooltip.style.visibility = 'visible';
+    tooltip.style.width      = TIP_W + 'px';
+
+    // Set caret direction
+    tooltip.classList.remove('caret-down', 'caret-up');
+    tooltip.classList.add(caretDir);
+  }
+
   /**
    * Toggles open/closed state of a hotspot button.
-   * Closes sibling hotspots in the same card first.
+   * Closes all sibling hotspots in the same card first.
    * @param {HTMLElement} btn - The hotspot button element
    */
   function toggleHotspot(btn) {
-    const cardNum   = btn.dataset.card;
-    const isOpen    = btn.classList.contains('open');
+    const cardNum = btn.dataset.card;
+    const isOpen  = btn.classList.contains('open');
 
-    // Close all hotspots in this card
+    // Close all hotspots in this card (resets tooltip display)
     closeAllHotspots(cardNum);
 
-    // If it was closed, open it now
+    // If it was closed, open it and position the tooltip
     if (!isOpen) {
       btn.classList.add('open');
       btn.setAttribute('aria-expanded', 'true');
+      positionTooltip(btn);
     }
   }
 
   /**
    * Closes all open hotspot tooltips within a card.
+   * Resets inline tooltip styles so CSS default (display:none) takes over.
    * @param {number|string} cardNum
    */
   function closeAllHotspots(cardNum) {
@@ -1050,15 +1189,33 @@
     layer.querySelectorAll('.hotspot.open').forEach(h => {
       h.classList.remove('open');
       h.setAttribute('aria-expanded', 'false');
+      // Reset inline styles set by positionTooltip so display:none from CSS applies
+      const tip = h.querySelector('.hotspot-tooltip');
+      if (tip) {
+        tip.style.display    = '';
+        tip.style.visibility = '';
+        tip.style.left       = '';
+        tip.style.top        = '';
+        tip.style.width      = '';
+      }
     });
   }
 
-  /* Close hotspots when clicking outside */
+  /* Close all tooltips when clicking outside any hotspot */
   document.addEventListener('click', function(e) {
     if (!e.target.closest('.hotspot')) {
       CARDS.forEach(n => closeAllHotspots(n));
     }
   });
+
+  /* Reposition open tooltips on scroll or resize (fixed position needs updating) */
+  function repositionOpenTooltips() {
+    document.querySelectorAll('.hotspot.open').forEach(btn => {
+      positionTooltip(btn);
+    });
+  }
+  window.addEventListener('resize', repositionOpenTooltips);
+  window.addEventListener('scroll', repositionOpenTooltips, { passive: true });
 
   /* ----------------------------------------------------------
      IMAGE LOAD / ERROR HANDLERS
