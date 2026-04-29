@@ -1,0 +1,1182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DP1 Path B — What Were the Changes?</title>
+
+  <style>
+    /* ============================================================
+       DESIGN TOKENS — Crash Lab Palette
+    ============================================================ */
+    :root {
+      --navy:        #1F2A44;
+      --orange:      #F97316;
+      --blue:        #3B82F6;
+      --offwhite:    #F8FAFC;
+      --lightgray:   #E5E7EB;
+      --steelgray:   #6B7280;
+
+      --navy-dark:   #141d30;
+      --orange-dim:  rgba(249, 115, 22, 0.15);
+      --blue-dim:    rgba(59, 130, 246, 0.15);
+      --card-bg:     #ffffff;
+      --shadow-md:   0 4px 20px rgba(31,42,68,0.12);
+      --shadow-lg:   0 8px 40px rgba(31,42,68,0.18);
+      --radius:      12px;
+      --radius-sm:   8px;
+
+      --font-display: 'Georgia', 'Times New Roman', serif;
+      --font-body:    'Trebuchet MS', 'Segoe UI', system-ui, sans-serif;
+      --font-mono:    'Courier New', monospace;
+    }
+
+    /* ============================================================
+       RESET & BASE
+    ============================================================ */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: var(--font-body);
+      background: var(--navy-dark);
+      color: var(--offwhite);
+      min-height: 100vh;
+      /* Subtle grid texture reminiscent of graph paper / lab notebook */
+      background-image:
+        linear-gradient(rgba(59,130,246,0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(59,130,246,0.04) 1px, transparent 1px);
+      background-size: 40px 40px;
+    }
+
+    /* ============================================================
+       PAGE SHELL
+    ============================================================ */
+    .page-wrapper {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 32px 20px 60px;
+    }
+
+    /* ============================================================
+       HEADER
+    ============================================================ */
+    .section-header {
+      margin-bottom: 36px;
+    }
+
+    .section-eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--orange-dim);
+      border: 1px solid rgba(249,115,22,0.35);
+      color: var(--orange);
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      padding: 5px 12px;
+      border-radius: 20px;
+      margin-bottom: 14px;
+    }
+
+    .section-eyebrow::before {
+      content: '';
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: var(--orange);
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50%       { opacity: 0.5; transform: scale(0.7); }
+    }
+
+    .section-title {
+      font-family: var(--font-display);
+      font-size: clamp(1.5rem, 4vw, 2.2rem);
+      font-weight: 700;
+      color: var(--offwhite);
+      line-height: 1.2;
+      margin-bottom: 10px;
+    }
+
+    .section-title span {
+      color: var(--blue);
+    }
+
+    .section-intro {
+      font-size: 0.95rem;
+      color: var(--steelgray);
+      max-width: 640px;
+      line-height: 1.65;
+    }
+
+    /* Investigation instruction banner */
+    .instruction-banner {
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      background: var(--blue-dim);
+      border: 1px solid rgba(59,130,246,0.3);
+      border-left: 4px solid var(--blue);
+      border-radius: var(--radius-sm);
+      padding: 14px 18px;
+      margin-bottom: 36px;
+      font-size: 0.9rem;
+      color: #c7d9f8;
+      line-height: 1.6;
+    }
+
+    .instruction-banner .icon {
+      font-size: 1.4rem;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    /* ============================================================
+       TEST CARDS GRID
+    ============================================================ */
+    .tests-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 24px;
+      margin-bottom: 44px;
+    }
+
+    /* ---- Individual Test Card ---- */
+    .test-card {
+      background: var(--card-bg);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-md);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      transition: box-shadow 0.25s ease, transform 0.25s ease;
+    }
+
+    .test-card:hover {
+      box-shadow: var(--shadow-lg);
+      transform: translateY(-2px);
+    }
+
+    /* Card header strip */
+    .card-header {
+      background: var(--navy);
+      padding: 12px 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .card-label {
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--offwhite);
+    }
+
+    /* Before/After toggle pill */
+    .toggle-pill {
+      display: flex;
+      background: rgba(255,255,255,0.1);
+      border-radius: 20px;
+      padding: 3px;
+      gap: 2px;
+    }
+
+    .toggle-btn {
+      border: none;
+      cursor: pointer;
+      font-family: var(--font-body);
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      padding: 5px 12px;
+      border-radius: 16px;
+      background: transparent;
+      color: rgba(255,255,255,0.55);
+      transition: background 0.2s ease, color 0.2s ease;
+      white-space: nowrap;
+    }
+
+    .toggle-btn.active {
+      background: var(--orange);
+      color: #fff;
+    }
+
+    /* Image container */
+    .card-image-wrap {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 4 / 3;
+      background: var(--lightgray);
+      overflow: hidden;
+    }
+
+    .card-img {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: opacity 0.35s ease;
+    }
+
+    .card-img.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    /* "After" badge that appears when in after state */
+    .after-badge {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: var(--orange);
+      color: #fff;
+      font-size: 0.65rem;
+      font-weight: 800;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 3px 8px;
+      border-radius: 4px;
+      opacity: 0;
+      transform: scale(0.85);
+      transition: opacity 0.3s ease, transform 0.3s ease;
+      pointer-events: none;
+    }
+
+    .card-image-wrap.is-after .after-badge {
+      opacity: 1;
+      transform: scale(1);
+    }
+
+    /* ---- Hotspot Overlay (only visible in "after" state) ---- */
+    .hotspot-layer {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.35s ease 0.1s;
+    }
+
+    .card-image-wrap.is-after .hotspot-layer {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    /* Each hotspot button */
+    .hotspot {
+      position: absolute;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      border: 2.5px solid #fff;
+      background: var(--orange);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.7rem;
+      font-weight: 800;
+      color: #fff;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      box-shadow: 0 0 0 4px rgba(249,115,22,0.35);
+      /* Ring pulse */
+      animation: ring-pulse 2.5s ease-in-out infinite;
+    }
+
+    @keyframes ring-pulse {
+      0%, 100% { box-shadow: 0 0 0 4px rgba(249,115,22,0.35); }
+      50%       { box-shadow: 0 0 0 8px rgba(249,115,22,0.10); }
+    }
+
+    .hotspot:hover, .hotspot:focus {
+      transform: scale(1.2);
+      outline: none;
+      animation: none;
+      box-shadow: 0 0 0 6px rgba(249,115,22,0.5);
+    }
+
+    /* Hotspot tooltip */
+    .hotspot-tooltip {
+      position: absolute;
+      bottom: calc(100% + 10px);
+      left: 50%;
+      transform: translateX(-50%) scale(0.92);
+      background: var(--navy);
+      color: var(--offwhite);
+      font-size: 0.78rem;
+      line-height: 1.5;
+      padding: 9px 13px;
+      border-radius: 8px;
+      white-space: nowrap;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+      border-top: 2px solid var(--orange);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s ease, transform 0.2s ease;
+      z-index: 10;
+      max-width: 200px;
+      white-space: normal;
+      text-align: center;
+    }
+
+    /* tooltip caret */
+    .hotspot-tooltip::after {
+      content: '';
+      position: absolute;
+      top: 100%;
+      left: 50%;
+      transform: translateX(-50%);
+      border: 6px solid transparent;
+      border-top-color: var(--navy);
+    }
+
+    .hotspot.open .hotspot-tooltip,
+    .hotspot:focus .hotspot-tooltip {
+      opacity: 1;
+      transform: translateX(-50%) scale(1);
+    }
+
+    /* Hotspot label (tiny caption below) */
+    .hotspot-label {
+      position: absolute;
+      top: calc(100% + 4px);
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 0.6rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: #fff;
+      white-space: nowrap;
+      text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+      pointer-events: none;
+    }
+
+    /* Card footer */
+    .card-footer {
+      padding: 12px 16px;
+      border-top: 1px solid var(--lightgray);
+      background: #fafafa;
+      font-size: 0.78rem;
+      color: var(--steelgray);
+      line-height: 1.5;
+      min-height: 48px;
+      transition: color 0.2s;
+    }
+
+    .card-footer.prompt-active {
+      color: var(--navy);
+      font-style: italic;
+    }
+
+    /* ============================================================
+       FIELD JOURNAL
+    ============================================================ */
+    .journal-section {
+      margin-top: 8px;
+      margin-bottom: 44px;
+    }
+
+    .journal-card {
+      background: var(--offwhite);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-md);
+      overflow: hidden;
+    }
+
+    .journal-header {
+      background: var(--navy);
+      padding: 14px 22px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .journal-icon {
+      font-size: 1.3rem;
+    }
+
+    .journal-title {
+      font-family: var(--font-display);
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--offwhite);
+      letter-spacing: 0.02em;
+    }
+
+    .journal-body {
+      padding: 22px;
+    }
+
+    .journal-prompt {
+      font-size: 0.95rem;
+      color: var(--navy);
+      background: var(--blue-dim);
+      border-left: 4px solid var(--blue);
+      padding: 12px 16px;
+      border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+      margin-bottom: 18px;
+      line-height: 1.65;
+      font-style: italic;
+    }
+
+    .journal-textarea {
+      width: 100%;
+      min-height: 140px;
+      font-family: var(--font-body);
+      font-size: 0.92rem;
+      color: var(--navy);
+      background: #ffffff;
+      border: 2px solid var(--lightgray);
+      border-radius: var(--radius-sm);
+      padding: 14px 16px;
+      resize: vertical;
+      line-height: 1.7;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+      outline: none;
+    }
+
+    .journal-textarea:focus {
+      border-color: var(--blue);
+      box-shadow: 0 0 0 3px rgba(59,130,246,0.15);
+    }
+
+    .journal-meta {
+      margin-top: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.75rem;
+      color: var(--steelgray);
+    }
+
+    .autosave-status {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: color 0.3s;
+    }
+
+    .autosave-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--steelgray);
+      transition: background 0.3s;
+    }
+
+    .autosave-status.saved   .autosave-dot { background: #22c55e; }
+    .autosave-status.saving  .autosave-dot { background: var(--orange); animation: pulse 0.8s infinite; }
+    .autosave-status.saved   { color: #22c55e; }
+    .autosave-status.saving  { color: var(--orange); }
+
+    /* ============================================================
+       NAVIGATION BUTTONS
+    ============================================================ */
+    .nav-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-family: var(--font-body);
+      font-size: 0.9rem;
+      font-weight: 700;
+      letter-spacing: 0.03em;
+      padding: 12px 26px;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      transition: background 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
+      text-decoration: none;
+    }
+
+    .btn:active { transform: scale(0.97); }
+
+    .btn-back {
+      background: transparent;
+      color: var(--steelgray);
+      border: 2px solid var(--steelgray);
+    }
+
+    .btn-back:hover {
+      border-color: var(--offwhite);
+      color: var(--offwhite);
+    }
+
+    .btn-continue {
+      background: var(--orange);
+      color: #fff;
+      box-shadow: 0 4px 16px rgba(249,115,22,0.4);
+    }
+
+    .btn-continue:hover {
+      background: #ea6800;
+      box-shadow: 0 6px 22px rgba(249,115,22,0.55);
+    }
+
+    .btn-arrow {
+      font-size: 1rem;
+    }
+
+    /* ============================================================
+       RESPONSIVE
+    ============================================================ */
+    @media (max-width: 680px) {
+      .tests-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .hotspot-tooltip {
+        font-size: 0.72rem;
+        max-width: 160px;
+      }
+
+      .nav-row {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .btn {
+        justify-content: center;
+      }
+    }
+
+    /* ============================================================
+       IMAGE PLACEHOLDER (shown when image hasn't loaded or is missing)
+    ============================================================ */
+    .img-placeholder {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      background: var(--lightgray);
+      color: var(--steelgray);
+      font-size: 0.8rem;
+    }
+
+    .img-placeholder svg {
+      width: 40px;
+      height: 40px;
+      opacity: 0.4;
+    }
+  </style>
+</head>
+<body>
+
+<div class="page-wrapper">
+
+  <!-- ============================================================
+       HEADER
+  ============================================================ -->
+  <header class="section-header">
+    <div class="section-eyebrow">DP1 · Path B · Investigation</div>
+    <h1 class="section-title">What Were <span>the Changes?</span></h1>
+    <p class="section-intro">
+      Compare the vehicle before and after each test run. Look closely — what do you notice about the structure?
+    </p>
+  </header>
+
+  <!-- Investigation instruction banner -->
+  <div class="instruction-banner">
+    <span class="icon">🔍</span>
+    <span>
+      <strong>Your job:</strong> Toggle between <em>Before Impact</em> and <em>After Impact</em> for each test.
+      Tap the orange <strong>●</strong> hotspots on the after-impact image to investigate specific areas.
+      Record what you observe in your Field Journal below.
+    </span>
+  </div>
+
+  <!-- ============================================================
+       TEST CARDS
+  ============================================================ -->
+  <div class="tests-grid" id="testsGrid">
+
+    <!-- ---- TEST 1 ---- -->
+    <div class="test-card" id="card-1">
+      <div class="card-header">
+        <span class="card-label">Test Run 1</span>
+        <div class="toggle-pill" role="group" aria-label="Test 1 image toggle">
+          <button class="toggle-btn active"
+                  data-card="1"
+                  data-state="before"
+                  onclick="setToggle(1,'before')"
+                  aria-pressed="true">Before Impact</button>
+          <button class="toggle-btn"
+                  data-card="1"
+                  data-state="after"
+                  onclick="setToggle(1,'after')"
+                  aria-pressed="false">After Impact</button>
+        </div>
+      </div>
+
+      <!-- Image area -->
+      <div class="card-image-wrap" id="imgWrap-1">
+
+        <!-- Placeholder (hidden once image loads) -->
+        <div class="img-placeholder" id="placeholder-1-before">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9l4-4 4 4 4-6 6 8"/><circle cx="8.5" cy="8.5" r="1.5"/></svg>
+          <span>Energy_no impact.png</span>
+        </div>
+
+        <!-- Before image -->
+        <img class="card-img"
+             id="img-1-before"
+             src="Energy_no impact.png"
+             alt="Vehicle before impact — Test 1"
+             onload="onImgLoad('1','before')"
+             onerror="onImgError('1','before')" />
+
+        <!-- After image (hidden by default) -->
+        <img class="card-img hidden"
+             id="img-1-after"
+             src="Energy_low impact.png"
+             alt="Vehicle after impact — Test 1"
+             onload="onImgLoad('1','after')"
+             onerror="onImgError('1','after')" />
+
+        <!-- "After Impact" badge -->
+        <div class="after-badge">After Impact</div>
+
+        <!-- Hotspot layer (only active in "after" state) -->
+        <!--
+          Hotspot positions are percentages (left%, top%) relative to the image container.
+          Adjust these values to align with the actual image content.
+        -->
+        <div class="hotspot-layer" id="hotspots-1" aria-label="Clickable observation points">
+
+          <!-- Front Bumper ~15% from left, 80% from top -->
+          <button class="hotspot"
+                  style="left:15%; top:78%;"
+                  aria-label="Front bumper observation"
+                  onclick="toggleHotspot(this)"
+                  data-card="1">
+            <span class="hotspot-label">Bumper</span>
+            <div class="hotspot-tooltip">
+              What do you notice about the front bumper's shape or position?
+            </div>
+          </button>
+
+          <!-- Hood ~45% from left, 50% from top -->
+          <button class="hotspot"
+                  style="left:45%; top:40%;"
+                  aria-label="Hood observation"
+                  onclick="toggleHotspot(this)"
+                  data-card="1">
+            <span class="hotspot-label">Hood</span>
+            <div class="hotspot-tooltip">
+              Look at the hood — does it look the same as before?
+            </div>
+          </button>
+
+          <!-- Barrier / contact point ~10% from left, 55% from top -->
+          <button class="hotspot"
+                  style="left:8%; top:55%;"
+                  aria-label="Barrier contact point observation"
+                  onclick="toggleHotspot(this)"
+                  data-card="1">
+            <span class="hotspot-label">Barrier</span>
+            <div class="hotspot-tooltip">
+              Where did the vehicle make contact? What does that area look like?
+            </div>
+          </button>
+
+          <!-- Crumple zone ~30% from left, 65% from top -->
+          <button class="hotspot"
+                  style="left:30%; top:60%;"
+                  aria-label="Crumple zone observation"
+                  onclick="toggleHotspot(this)"
+                  data-card="1">
+            <span class="hotspot-label">Crumple Zone</span>
+            <div class="hotspot-tooltip">
+              Can you find any part of the vehicle that bent, folded, or crushed?
+            </div>
+          </button>
+
+        </div><!-- /hotspot-layer -->
+      </div><!-- /card-image-wrap -->
+
+      <!-- Footer prompt text -->
+      <div class="card-footer" id="footer-1">
+        Toggle to <strong>After Impact</strong> and tap the orange circles to investigate.
+      </div>
+    </div><!-- /test-card 1 -->
+
+
+    <!-- ---- TEST 2 ---- -->
+    <div class="test-card" id="card-2">
+      <div class="card-header">
+        <span class="card-label">Test Run 2</span>
+        <div class="toggle-pill" role="group" aria-label="Test 2 image toggle">
+          <button class="toggle-btn active"
+                  data-card="2"
+                  data-state="before"
+                  onclick="setToggle(2,'before')"
+                  aria-pressed="true">Before Impact</button>
+          <button class="toggle-btn"
+                  data-card="2"
+                  data-state="after"
+                  onclick="setToggle(2,'after')"
+                  aria-pressed="false">After Impact</button>
+        </div>
+      </div>
+
+      <div class="card-image-wrap" id="imgWrap-2">
+
+        <div class="img-placeholder" id="placeholder-2-before">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9l4-4 4 4 4-6 6 8"/><circle cx="8.5" cy="8.5" r="1.5"/></svg>
+          <span>Energy_no impact.png</span>
+        </div>
+
+        <img class="card-img"
+             id="img-2-before"
+             src="Energy_no impact.png"
+             alt="Vehicle before impact — Test 2"
+             onload="onImgLoad('2','before')"
+             onerror="onImgError('2','before')" />
+
+        <img class="card-img hidden"
+             id="img-2-after"
+             src="Energy_medium impact.png"
+             alt="Vehicle after impact — Test 2"
+             onload="onImgLoad('2','after')"
+             onerror="onImgError('2','after')" />
+
+        <div class="after-badge">After Impact</div>
+
+        <div class="hotspot-layer" id="hotspots-2" aria-label="Clickable observation points">
+
+          <button class="hotspot"
+                  style="left:15%; top:78%;"
+                  aria-label="Front bumper observation"
+                  onclick="toggleHotspot(this)"
+                  data-card="2">
+            <span class="hotspot-label">Bumper</span>
+            <div class="hotspot-tooltip">
+              How does the front bumper compare to Test 1?
+            </div>
+          </button>
+
+          <button class="hotspot"
+                  style="left:45%; top:40%;"
+                  aria-label="Hood observation"
+                  onclick="toggleHotspot(this)"
+                  data-card="2">
+            <span class="hotspot-label">Hood</span>
+            <div class="hotspot-tooltip">
+              Do you notice more or less change on the hood here?
+            </div>
+          </button>
+
+          <button class="hotspot"
+                  style="left:8%; top:55%;"
+                  aria-label="Barrier contact point observation"
+                  onclick="toggleHotspot(this)"
+                  data-card="2">
+            <span class="hotspot-label">Barrier</span>
+            <div class="hotspot-tooltip">
+              How deep or wide is the contact area compared to Test 1?
+            </div>
+          </button>
+
+          <button class="hotspot"
+                  style="left:30%; top:60%;"
+                  aria-label="Crumple zone observation"
+                  onclick="toggleHotspot(this)"
+                  data-card="2">
+            <span class="hotspot-label">Crumple Zone</span>
+            <div class="hotspot-tooltip">
+              Is the crumple zone bigger, smaller, or different from Test 1?
+            </div>
+          </button>
+
+        </div>
+      </div>
+
+      <div class="card-footer" id="footer-2">
+        Toggle to <strong>After Impact</strong> and tap the orange circles to investigate.
+      </div>
+    </div><!-- /test-card 2 -->
+
+
+    <!-- ---- TEST 3 ---- -->
+    <div class="test-card" id="card-3">
+      <div class="card-header">
+        <span class="card-label">Test Run 3</span>
+        <div class="toggle-pill" role="group" aria-label="Test 3 image toggle">
+          <button class="toggle-btn active"
+                  data-card="3"
+                  data-state="before"
+                  onclick="setToggle(3,'before')"
+                  aria-pressed="true">Before Impact</button>
+          <button class="toggle-btn"
+                  data-card="3"
+                  data-state="after"
+                  onclick="setToggle(3,'after')"
+                  aria-pressed="false">After Impact</button>
+        </div>
+      </div>
+
+      <div class="card-image-wrap" id="imgWrap-3">
+
+        <div class="img-placeholder" id="placeholder-3-before">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9l4-4 4 4 4-6 6 8"/><circle cx="8.5" cy="8.5" r="1.5"/></svg>
+          <span>Energy_no impact.png</span>
+        </div>
+
+        <img class="card-img"
+             id="img-3-before"
+             src="Energy_no impact.png"
+             alt="Vehicle before impact — Test 3"
+             onload="onImgLoad('3','before')"
+             onerror="onImgError('3','before')" />
+
+        <img class="card-img hidden"
+             id="img-3-after"
+             src="Energy_high impact.png"
+             alt="Vehicle after impact — Test 3"
+             onload="onImgLoad('3','after')"
+             onerror="onImgError('3','after')" />
+
+        <div class="after-badge">After Impact</div>
+
+        <div class="hotspot-layer" id="hotspots-3" aria-label="Clickable observation points">
+
+          <button class="hotspot"
+                  style="left:15%; top:78%;"
+                  aria-label="Front bumper observation"
+                  onclick="toggleHotspot(this)"
+                  data-card="3">
+            <span class="hotspot-label">Bumper</span>
+            <div class="hotspot-tooltip">
+              What happened to the bumper? Compare it to the before image.
+            </div>
+          </button>
+
+          <button class="hotspot"
+                  style="left:45%; top:40%;"
+                  aria-label="Hood observation"
+                  onclick="toggleHotspot(this)"
+                  data-card="3">
+            <span class="hotspot-label">Hood</span>
+            <div class="hotspot-tooltip">
+              Look at the hood — how far did the damage reach compared to Test 1 and 2?
+            </div>
+          </button>
+
+          <button class="hotspot"
+                  style="left:8%; top:55%;"
+                  aria-label="Barrier contact point observation"
+                  onclick="toggleHotspot(this)"
+                  data-card="3">
+            <span class="hotspot-label">Barrier</span>
+            <div class="hotspot-tooltip">
+              How does this contact area compare to the other two tests?
+            </div>
+          </button>
+
+          <button class="hotspot"
+                  style="left:30%; top:60%;"
+                  aria-label="Crumple zone observation"
+                  onclick="toggleHotspot(this)"
+                  data-card="3">
+            <span class="hotspot-label">Crumple Zone</span>
+            <div class="hotspot-tooltip">
+              Can you see a pattern in how the crumple zone changed across all three tests?
+            </div>
+          </button>
+
+        </div>
+      </div>
+
+      <div class="card-footer" id="footer-3">
+        Toggle to <strong>After Impact</strong> and tap the orange circles to investigate.
+      </div>
+    </div><!-- /test-card 3 -->
+
+  </div><!-- /tests-grid -->
+
+
+  <!-- ============================================================
+       FIELD JOURNAL
+  ============================================================ -->
+  <section class="journal-section" aria-label="Field Journal">
+    <div class="journal-card">
+
+      <div class="journal-header">
+        <span class="journal-icon">📓</span>
+        <h2 class="journal-title">Field Journal</h2>
+      </div>
+
+      <div class="journal-body">
+        <div class="journal-prompt">
+          "What changes do you observe during the crash? How do the changes differ between the test runs?"
+        </div>
+
+        <textarea
+          class="journal-textarea"
+          id="journalEntry"
+          placeholder="Write your observations here…"
+          aria-label="Field journal response"
+          oninput="onJournalInput()"
+        ></textarea>
+
+        <div class="journal-meta">
+          <span>Use your observations from all three test runs.</span>
+          <span class="autosave-status" id="autosaveStatus">
+            <span class="autosave-dot"></span>
+            <span id="autosaveText">Not yet saved</span>
+          </span>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+
+  <!-- ============================================================
+       NAVIGATION
+  ============================================================ -->
+  <nav class="nav-row" aria-label="Section navigation">
+    <button class="btn btn-back" onclick="goBack()">
+      <span class="btn-arrow">←</span> Back
+    </button>
+    <button class="btn btn-continue" onclick="goToSection('dp1-convergence')">
+      Continue <span class="btn-arrow">→</span>
+    </button>
+  </nav>
+
+</div><!-- /page-wrapper -->
+
+
+<!-- ============================================================
+     JAVASCRIPT
+============================================================ -->
+<script>
+  /* ----------------------------------------------------------
+     CONSTANTS
+  ---------------------------------------------------------- */
+  const STORAGE_KEY = 'sins_dp1_pathB_journal';   // localStorage key
+  const CARDS       = [1, 2, 3];                  // all test card numbers
+
+  /* State: track which toggle (before/after) is active per card */
+  const cardState = { 1: 'before', 2: 'before', 3: 'before' };
+
+  /* ----------------------------------------------------------
+     TOGGLE — switch between Before / After images
+  ---------------------------------------------------------- */
+  /**
+   * Sets the active state (before or after) for a given card.
+   * @param {number} cardNum  - 1, 2, or 3
+   * @param {string} state    - 'before' | 'after'
+   */
+  function setToggle(cardNum, state) {
+    cardState[cardNum] = state;
+
+    const beforeImg  = document.getElementById(`img-${cardNum}-before`);
+    const afterImg   = document.getElementById(`img-${cardNum}-after`);
+    const imgWrap    = document.getElementById(`imgWrap-${cardNum}`);
+    const footer     = document.getElementById(`footer-${cardNum}`);
+
+    // Buttons: update active class + aria-pressed
+    const buttons = document.querySelectorAll(`[data-card="${cardNum}"]`);
+    buttons.forEach(btn => {
+      const isActive = btn.dataset.state === state;
+      btn.classList.toggle('active', isActive);
+      btn.setAttribute('aria-pressed', String(isActive));
+    });
+
+    if (state === 'after') {
+      beforeImg.classList.add('hidden');
+      afterImg.classList.remove('hidden');
+      imgWrap.classList.add('is-after');
+      footer.textContent   = 'Tap the orange circles to explore this test run.';
+      footer.classList.add('prompt-active');
+    } else {
+      afterImg.classList.add('hidden');
+      beforeImg.classList.remove('hidden');
+      imgWrap.classList.remove('is-after');
+      footer.innerHTML     = 'Toggle to <strong>After Impact</strong> and tap the orange circles to investigate.';
+      footer.classList.remove('prompt-active');
+      // Close any open hotspot tooltips
+      closeAllHotspots(cardNum);
+    }
+  }
+
+  /* ----------------------------------------------------------
+     HOTSPOTS — toggle observation prompt tooltip
+  ---------------------------------------------------------- */
+  /**
+   * Toggles open/closed state of a hotspot button.
+   * Closes sibling hotspots in the same card first.
+   * @param {HTMLElement} btn - The hotspot button element
+   */
+  function toggleHotspot(btn) {
+    const cardNum   = btn.dataset.card;
+    const isOpen    = btn.classList.contains('open');
+
+    // Close all hotspots in this card
+    closeAllHotspots(cardNum);
+
+    // If it was closed, open it now
+    if (!isOpen) {
+      btn.classList.add('open');
+      btn.setAttribute('aria-expanded', 'true');
+    }
+  }
+
+  /**
+   * Closes all open hotspot tooltips within a card.
+   * @param {number|string} cardNum
+   */
+  function closeAllHotspots(cardNum) {
+    const layer = document.getElementById(`hotspots-${cardNum}`);
+    if (!layer) return;
+    layer.querySelectorAll('.hotspot.open').forEach(h => {
+      h.classList.remove('open');
+      h.setAttribute('aria-expanded', 'false');
+    });
+  }
+
+  /* Close hotspots when clicking outside */
+  document.addEventListener('click', function(e) {
+    if (!e.target.closest('.hotspot')) {
+      CARDS.forEach(n => closeAllHotspots(n));
+    }
+  });
+
+  /* ----------------------------------------------------------
+     IMAGE LOAD / ERROR HANDLERS
+  ---------------------------------------------------------- */
+  /**
+   * Called when an image loads successfully — hides the placeholder.
+   * @param {string} cardNum
+   * @param {string} state - 'before' | 'after'
+   */
+  function onImgLoad(cardNum, state) {
+    const placeholder = document.getElementById(`placeholder-${cardNum}-${state}`);
+    if (placeholder) placeholder.style.display = 'none';
+  }
+
+  /**
+   * Called when an image fails to load — keeps the placeholder visible
+   * with a fallback label so the layout doesn't break.
+   * @param {string} cardNum
+   * @param {string} state - 'before' | 'after'
+   */
+  function onImgError(cardNum, state) {
+    const img         = document.getElementById(`img-${cardNum}-${state}`);
+    const placeholder = document.getElementById(`placeholder-${cardNum}-${state}`);
+    if (img) img.style.display = 'none';
+    if (placeholder) {
+      placeholder.style.display = 'flex';
+      // Update the filename hint in the placeholder
+      const label = placeholder.querySelector('span');
+      if (label) {
+        const src = img ? img.src.split('/').pop() : '';
+        label.textContent = `Image not found: ${src}`;
+      }
+    }
+  }
+
+  /* ----------------------------------------------------------
+     FIELD JOURNAL — autosave to localStorage
+  ---------------------------------------------------------- */
+  let saveTimer = null;
+
+  /**
+   * Triggered on every keystroke in the journal textarea.
+   * Debounces autosave by 1.2 seconds.
+   */
+  function onJournalInput() {
+    setAutosaveStatus('saving');
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(saveJournal, 1200);
+  }
+
+  /** Writes the current journal content to localStorage. */
+  function saveJournal() {
+    try {
+      const value = document.getElementById('journalEntry').value;
+      localStorage.setItem(STORAGE_KEY, value);
+      setAutosaveStatus('saved');
+    } catch (err) {
+      // localStorage may be unavailable in some restricted environments
+      console.warn('Autosave failed:', err);
+      setAutosaveStatus('idle');
+    }
+  }
+
+  /**
+   * Updates the autosave indicator badge.
+   * @param {string} status - 'saving' | 'saved' | 'idle'
+   */
+  function setAutosaveStatus(status) {
+    const el   = document.getElementById('autosaveStatus');
+    const text = document.getElementById('autosaveText');
+    el.className = `autosave-status ${status}`;
+    if (status === 'saving') text.textContent = 'Saving…';
+    if (status === 'saved')  text.textContent = 'Saved ✓';
+    if (status === 'idle')   text.textContent = 'Not yet saved';
+  }
+
+  /** Loads any previously saved journal entry on page load. */
+  function loadJournal() {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        document.getElementById('journalEntry').value = saved;
+        setAutosaveStatus('saved');
+      }
+    } catch (err) {
+      console.warn('Could not load saved journal:', err);
+    }
+  }
+
+  /* ----------------------------------------------------------
+     NAVIGATION PLACEHOLDERS
+  ---------------------------------------------------------- */
+  /**
+   * Placeholder — navigates back to the previous section.
+   * Replace with your actual navigation logic.
+   */
+  function goBack() {
+    console.log('[Navigation] goBack() called');
+    // Example: window.history.back();
+  }
+
+  /**
+   * Placeholder — advances to the specified section.
+   * Replace with your actual navigation/routing logic.
+   * @param {string} sectionId - e.g. 'dp1-convergence'
+   */
+  function goToSection(sectionId) {
+    console.log(`[Navigation] goToSection("${sectionId}") called`);
+    // Example: loadSection(sectionId);
+  }
+
+  /* ----------------------------------------------------------
+     INIT
+  ---------------------------------------------------------- */
+  document.addEventListener('DOMContentLoaded', function () {
+    loadJournal();
+  });
+</script>
+
+</body>
+</html>
